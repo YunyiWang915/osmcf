@@ -72,11 +72,16 @@ gamma.fun = function(data){
 
 ################ 3. Estimation function for beta ################
 # negative log partial likelihood function
-neglog_pl_beta = function(odat, beta){
+neglog_pl_beta = function(odat, beta, ind.rho_est, gammas.hat, events_id){
   Y = odat$Y
-  # Estimate rho0
   Y.mat = cbind(rep(1,length(Y)), log(Y), Y, Y^2)
-  rho0.hat = exp(as.vector(Y.mat%*%gamma1.hat))
+  
+  gammas.true = c(-0.314, 0.5, 0, 0, 0.4, -0.5) # true value
+  if (ind.rho_est == 1){gamma1 = gammas.hat[1:4]; gamma2 = gammas.hat[-c(1:4)]}
+  if (ind.rho_est == 0){gamma1 = gammas.true[1:4]; gamma2 = gammas.true[-c(1:4)]}
+  
+  # Estimate rho0
+  rho0.hat = exp(as.vector(Y.mat%*%gamma1))
   odat = cbind(odat,rho0.hat)
   # odat = odat[is.finite(rowSums(odat)),] # remove the rows with +/-Inf and rows containing NA
   
@@ -89,7 +94,6 @@ neglog_pl_beta = function(odat, beta){
     Xj = cbind(odat$X1[risk.id], odat$X2[risk.id])
     
     rho0.hat = odat$rho0.hat[id]
-    gamma2 = gamma2.hat
     
     log_parlike = log_parlike - Xi%*%beta - log(1+rho0.hat*exp(Xi%*%gamma2)) + log(sum(exp(Xj%*%beta)*(1+rho0.hat*exp(Xj%*%gamma2))))
   }
@@ -103,7 +107,7 @@ gd.logit <- function(xx){exp(xx) / (1+exp(xx))^2} # derivative of logit link fun
 
 
 ################ 5. Main function for estimating coefficients and their se ################
-osmcf <- function(Nc, No, p, r, mu, lambda, nu, theta, beta, alpha, par1){
+osmcf <- function(Nc, No, p, r, mu, lambda, nu, theta, beta, alpha, par1, ind.rho_est){
   #1) Generate clinical trial dataset
   cdat = cdata_gen(Nc, p, r, mu, lambda, nu, theta, beta, alpha)
   
@@ -111,10 +115,11 @@ osmcf <- function(Nc, No, p, r, mu, lambda, nu, theta, beta, alpha, par1){
   mod_gamma = gamma.fun(data = cdat)
   gammas.hat = mod_gamma$coeff
   gammas.se = mod_gamma$coeff_se
-  gamma1.hat = gammas.hat[1:4]
-  gamma1.se = gammas.se[1:4]
-  gamma2.hat = gammas.hat[-c(1:4)]
-  gamma2.se = gammas.se[-c(1:4)]
+  gammas.cov = mod_gamma$vcov
+  # gamma1.hat = gammas.hat[1:4]
+  # gamma1.se = gammas.se[1:4]
+  # gamma2.hat = gammas.hat[-c(1:4)]
+  # gamma2.se = mod_gamma$coeff_se[-c(1:4)]
   
   #3) Generate observational study dataset and order it by observed event time
   odat = odata_gen(No, p, r, mu, lambda, nu, theta, beta, alpha)
@@ -138,7 +143,7 @@ osmcf <- function(Nc, No, p, r, mu, lambda, nu, theta, beta, alpha, par1){
   
   #4) Estimate beta's
   # par1 = c(0.1,0.1)
-  beta.hat = nlm(f = neglog_pl_beta, par1, odat = odat)$estimate # Use nlm() to minimize negative log partial likelihood
+  beta.hat = nlm(f = neglog_pl_beta, par1, odat = odat, ind.rho_est, gammas.hat = gammas.hat, events_id = events_id)$estimate # Use nlm() to minimize negative log partial likelihood
   
   #5) Compute beta's se
   A.inv = mod_gamma$vcov*Nc # variance-covariance matrix of (gamma.hat - gamma0), A^-1 
@@ -177,8 +182,9 @@ osmcf <- function(Nc, No, p, r, mu, lambda, nu, theta, beta, alpha, par1){
   beta.se = sqrt(diag(beta.vcov))
   # beta.se
   
-  coeff_est = c(gammas.hat, beta.hat, gammas.se, beta.se)
-  return(coeff_est)
+  coeff.est = c(gammas.hat, beta.hat, gammas.se, beta.se)
+  return(list(coeff_est = coeff.est,
+              gamma1_cov = gammas.cov[1:4,1:4]))
 }
 
-#Nc = 500; No = 500; p = 0.5; r = 0.1; mu = 1.5; lambda = 0.5; beta = c(-0.5,1); alpha = c(-0.1,0.5); nu = 2; theta = 0.5; par1 = c(0.1,0.1)
+#Nc = 500000; No = 500; p = 0.5; r = 0.1; mu = 1.5; lambda = 0.5; beta = c(-0.5,1); alpha = c(-0.1,0.5); nu = 2; theta = 0.5; par1 = c(0.1,0.1)
