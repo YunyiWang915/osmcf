@@ -143,7 +143,8 @@ osmcf <- function(Nc, No, p, r, mu, lambda, nu, theta, beta, alpha, par1, ind.rh
   
   #4) Estimate beta's
   # par1 = c(0.1,0.1)
-  beta.hat = nlm(f = neglog_pl_beta, par1, odat = odat, ind.rho_est, gammas.hat = gammas.hat, events_id = events_id)$estimate # Use nlm() to minimize negative log partial likelihood
+  beta.hat = nlm(f = neglog_pl_beta, par1, odat = odat, ind.rho_est, gammas.hat = gammas.hat, 
+                 events_id = events_id)$estimate # Use nlm() to minimize negative log partial likelihood
   
   #5) Compute beta's se
   A.inv = mod_gamma$vcov*Nc # variance-covariance matrix of (gamma.hat - gamma0), A^-1 

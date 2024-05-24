@@ -1,14 +1,5 @@
-osmcf_res_sum <- function(est.res, vcov.res, Y = seq(0.01, 3, 0.01),
+rho0_res_sum <- function(est.res, vcov.res, Y = seq(0.01, 3, 0.01),
                           mu, lambda, nu, theta, beta, alpha, nsim = 1000){
-  colnames(est.res) = c("gamma1.int", "gamma1.0",
-                        "gamma1.1", "gamma1.2",
-                        "gamma2.X1", "gamma2.X2",
-                        "beta.X1", "beta.X2",
-                        
-                        "gamma1.int.se", "gamma1.0.se",
-                        "gamma1.1.se", "gamma1.2.se",
-                        "gamma2.X1.se", "gamma2.X2.se",
-                        "beta.X1.se", "beta.X2.se")
   
   ############# rho0.hat, rho0.true, rho0.se #################
   Y.std = Y/0.6 # time points should be standardized
@@ -34,6 +25,20 @@ osmcf_res_sum <- function(est.res, vcov.res, Y = seq(0.01, 3, 0.01),
   rho0.ciu = round(colMeans(rho0.ciu.df),3)
   rho0.res = as.data.frame(cbind(Y, rho0.true, rho0.mean, rho0.sd, rho0.se, rho0.cil, rho0.ciu))
   #mean((rho0.mean - rho0.true)^2) # MSE between true and estimated rho0
+  return(rho0.res)
+}
+
+
+coeff_res_sum <- function(est.res, mu, lambda, nu, theta, beta, alpha){
+  colnames(est.res) = c("gamma1.int", "gamma1.0",
+                        "gamma1.1", "gamma1.2",
+                        "gamma2.X1", "gamma2.X2",
+                        "beta.X1", "beta.X2",
+                        
+                        "gamma1.int.se", "gamma1.0.se",
+                        "gamma1.1.se", "gamma1.2.se",
+                        "gamma2.X1.se", "gamma2.X2.se",
+                        "beta.X1.se", "beta.X2.se")
   
   ############# coefficients coverage probabilities #################
   gamma1.int_cil = est.res$gamma1.int + qnorm(.025) * est.res$gamma1.int.se
@@ -75,13 +80,13 @@ osmcf_res_sum <- function(est.res, vcov.res, Y = seq(0.01, 3, 0.01),
   
   
   coeff.res = data.frame("Parameter" = c("gamma1.int", "gamma1.0", "gamma1.1", "gamma1.2",
-                                          "gamma2.X1", "gamma2.X2", 
-                                          "beta.X1", "beta.X2"),
-                                  "True Value" = trues,
-                                  "Estimates" = round(colMeans(est.res[,1:8]),3),
-                                  "Bias" = round(colMeans(est.res[,1:8]),3) - trues,
-                                  "SD" = round(apply(est.res[,1:8],2,sd),3),
-                                  "SE" = round(colMeans(est.res[,9:16]),3),
-                                  "CP" = round(colMeans(est.res[,17:24]),3))
-  return(list(rho0.res = rho0.res, coeff.res = coeff.res))
+                                         "gamma2.X1", "gamma2.X2", 
+                                         "beta.X1", "beta.X2"),
+                         "True Value" = trues,
+                         "Estimates" = round(colMeans(est.res[,1:8]),3),
+                         "Bias" = round(colMeans(est.res[,1:8]),3) - trues,
+                         "SD" = round(apply(est.res[,1:8],2,sd),3),
+                         "SE" = round(colMeans(est.res[,9:16]),3),
+                         "CP" = round(colMeans(est.res[,17:24]),3))
+  return(coeff.res)
 }

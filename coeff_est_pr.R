@@ -62,7 +62,6 @@ gamma.fun = function(data, ind.wt){
     mod = glm((1-Delta.R) ~ Y.R_0 + Y.R + Y.R_2 + X1.R + X2.R,
               data = Y.R.mat, family = "binomial")
   }
-  
   if (ind.wt == 1){
     Y.R.mat = data.frame(cbind(Y.R_0,Y.R,Y.R_2, mydata[c("Delta.R", "X1.R", "X2.R","rwt")]))
     mod = glm((1-Delta.R) ~ Y.R_0 + Y.R + Y.R_2 + X1.R + X2.R,
@@ -80,7 +79,7 @@ gamma.fun = function(data, ind.wt){
 
 ################ 3. Estimation function for beta ################
 # negative log partial likelihood function
-neglog_pl_beta = function(odat, beta, ind.rho_est, gammas.hat, events_id){
+neglog_pl_beta = function(odat, beta, ind.rho_est, gammas.hat, events_id, ind.wt){
   Y = odat$Y
   Y.mat = cbind(rep(1,length(Y)), log(Y), Y, Y^2)
   
@@ -97,12 +96,18 @@ neglog_pl_beta = function(odat, beta, ind.rho_est, gammas.hat, events_id){
     id = events_id[l]
     Yi = odat$Y[id] # Yi
     Xi = c(odat$X1[id], odat$X2[id]) # Xi
+    Wi = odat$rwt[id]
     risk.id = which(odat$Y >= Yi) # risk set R(Yi)
     Xj = cbind(odat$X1[risk.id], odat$X2[risk.id])
     
     rho0.hat = odat$rho0.hat[id]
     
-    log_parlike = log_parlike - Xi%*%beta - log(1+rho0.hat*exp(Xi%*%gamma2)) + log(sum(exp(Xj%*%beta)*(1+rho0.hat*exp(Xj%*%gamma2))))
+    if (ind.wt == 0){
+      log_parlike = log_parlike - Xi%*%beta - log(1+rho0.hat*exp(Xi%*%gamma2)) + log(sum(exp(Xj%*%beta)*(1+rho0.hat*exp(Xj%*%gamma2))))
+    }
+    if (ind.wt == 1){
+      log_parlike = log_parlike - Wi*(Xi%*%beta + log(1+rho0.hat*exp(Xi%*%gamma2)) - log(sum(exp(Xj%*%beta)*(1+rho0.hat*exp(Xj%*%gamma2)))))
+    }
   }
   return(log_parlike)
 }
@@ -114,7 +119,7 @@ gd.logit <- function(xx){exp(xx) / (1+exp(xx))^2} # derivative of logit link fun
 
 
 ################ 5. Main function for estimating coefficients and their se ################
-osmcf.pr <- function(Nc, No, p, r, mu, lambda, nu, theta, beta, alpha, par1, ind.rho_est){
+osmcf_pr <- function(Nc, No, p, r, mu, lambda, nu, theta, beta, alpha, par1, ind.rho_est){
   #1) Generate clinical trial dataset
   cdat = cdata_gen(Nc, p, r, mu, lambda, nu, theta, beta, alpha)
   
@@ -131,7 +136,8 @@ osmcf.pr <- function(Nc, No, p, r, mu, lambda, nu, theta, beta, alpha, par1, ind
   
   #4) Estimate beta's
   # par1 = c(0.1,0.1)
-  beta.hat = nlm(f = neglog_pl_beta, par1, odat = odat, ind.rho_est, gammas.hat = gammas.hat, events_id = events_id)$estimate # Use nlm() to minimize negative log partial likelihood
+  beta.hat = nlm(f = neglog_pl_beta, par1, odat = odat, ind.rho_est, gammas.hat = gammas.hat, 
+                 events_id = events_id, ind.wt = 0)$estimate # Use nlm() to minimize negative log partial likelihood
   
   #5) Compute beta's se using perturbation
   beta.hat.pr = data.frame(matrix(nrow = 200, ncol = 2)) 
@@ -146,7 +152,8 @@ osmcf.pr <- function(Nc, No, p, r, mu, lambda, nu, theta, beta, alpha, par1, ind
     odat.pr = odat.pr[order(odat.pr$Y),]
     events_id.pr = which(odat.pr$delta == 1)
     
-    beta.hat.pr[k,] = nlm(f = neglog_pl_beta, par1, odat = odat.pr, ind.rho_est, gammas.hat = gammas.hat.pr, events_id = events_id.pr)$estimate
+    beta.hat.pr[k,] = nlm(f = neglog_pl_beta, par1, odat = odat.pr, ind.rho_est, gammas.hat = gammas.hat.pr, 
+                          events_id = events_id.pr, ind.wt = 1)$estimate
   }
   
   beta.se = apply(beta.hat.pr,2,sd)
