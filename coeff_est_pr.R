@@ -79,24 +79,24 @@ gamma.fun = function(data, ind.wt){
 
 ################ 3. Estimation function for beta ################
 # negative log partial likelihood function
-neglog_pl_beta = function(odat, beta, ind.rho_est, gammas.hat, events_id, ind.wt){
-  Y = odat$Y
-  Y.mat = cbind(rep(1,length(Y)), log(Y), Y, Y^2)
-  
-  gammas.true = c(-0.314, 0.5, 0, 0, 0.4, -0.5) # true value
-  if (ind.rho_est == 1){gamma1 = gammas.hat[1:4]; gamma2 = gammas.hat[-c(1:4)]}
-  if (ind.rho_est == 0){gamma1 = gammas.true[1:4]; gamma2 = gammas.true[-c(1:4)]}
-  
-  # Estimate rho0
-  rho0.hat = exp(as.vector(Y.mat%*%gamma1))
-  odat = cbind(odat,rho0.hat)
+neglog_pl_beta = function(odat, beta, ind.rho_est, gamma2, events_id, ind.wt){
+  # Y = odat$Y
+  # Y.mat = cbind(rep(1,length(Y)), log(Y), Y, Y^2)
+  # 
+  # gammas.true = c(-0.314, 0.5, 0, 0, 0.4, -0.5) # true value
+  # if (ind.rho_est == 1){gamma1 = gammas.hat[1:4]; gamma2 = gammas.hat[-c(1:4)]}
+  # if (ind.rho_est == 0){gamma1 = gammas.true[1:4]; gamma2 = gammas.true[-c(1:4)]}
+  # 
+  # # Estimate rho0
+  # rho0.hat = exp(as.vector(Y.mat%*%gamma1))
+  # odat = cbind(odat,rho0.hat)
   
   log_parlike = 0
   for (l in 1:length(events_id)){
     id = events_id[l]
     Yi = odat$Y[id] # Yi
     Xi = c(odat$X1[id], odat$X2[id]) # Xi
-    Wi = odat$rwt[id]
+    # Wi = odat$rwt[id]
     risk.id = which(odat$Y >= Yi) # risk set R(Yi)
     Xj = cbind(odat$X1[risk.id], odat$X2[risk.id])
     
@@ -106,6 +106,7 @@ neglog_pl_beta = function(odat, beta, ind.rho_est, gammas.hat, events_id, ind.wt
       log_parlike = log_parlike - Xi%*%beta - log(1+rho0.hat*exp(Xi%*%gamma2)) + log(sum(exp(Xj%*%beta)*(1+rho0.hat*exp(Xj%*%gamma2))))
     }
     if (ind.wt == 1){
+      Wi = odat$rwt[id]
       log_parlike = log_parlike - Wi*(Xi%*%beta + log(1+rho0.hat*exp(Xi%*%gamma2)) - log(sum(exp(Xj%*%beta)*(1+rho0.hat*exp(Xj%*%gamma2)))))
     }
   }
@@ -114,8 +115,8 @@ neglog_pl_beta = function(odat, beta, ind.rho_est, gammas.hat, events_id, ind.wt
 
 
 ################ 4. Logit link function ################
-g.logit <- function(xx){exp(xx) / (1 + exp(xx))}
-gd.logit <- function(xx){exp(xx) / (1+exp(xx))^2} # derivative of logit link function
+# g.logit <- function(xx){exp(xx) / (1 + exp(xx))}
+# gd.logit <- function(xx){exp(xx) / (1+exp(xx))^2} # derivative of logit link function
 
 
 ################ 5. Main function for estimating coefficients and their se ################
@@ -133,10 +134,20 @@ osmcf_pr <- function(Nc, No, p, r, mu, lambda, nu, theta, beta, alpha, par1, ind
   odat = odata_gen(No, p, r, mu, lambda, nu, theta, beta, alpha)
   odat = odat[order(odat$Y),] # order by event time
   events_id = which(odat$delta == 1) # observed events index
+  Y = odat$Y
+  Y.mat = cbind(rep(1,length(Y)), log(Y), Y, Y^2)
+  
+  gammas.true = c(-0.314, 0.5, 0, 0, 0.4, -0.5) # true value
+  if (ind.rho_est == 1){gamma1 = gammas.hat[1:4]; gamma2 = gammas.hat[-c(1:4)]}
+  if (ind.rho_est == 0){gamma1 = gammas.true[1:4]; gamma2 = gammas.true[-c(1:4)]}
+  
+  # Estimate rho0
+  rho0.hat = exp(as.vector(Y.mat%*%gamma1))
+  odat = cbind(odat,rho0.hat)
   
   #4) Estimate beta's
   # par1 = c(0.1,0.1)
-  beta.hat = nlm(f = neglog_pl_beta, par1, odat = odat, ind.rho_est, gammas.hat = gammas.hat, 
+  beta.hat = nlm(f = neglog_pl_beta, par1, odat = odat, ind.rho_est, gamma2 = gamma2, 
                  events_id = events_id, ind.wt = 0)$estimate # Use nlm() to minimize negative log partial likelihood
   
   #5) Compute beta's se using perturbation
