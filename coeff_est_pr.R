@@ -149,11 +149,11 @@ osmcf_pr <- function(Nc, No, p, r, mu, lambda, nu, theta, beta, alpha, par1, ind
     
     odat.pr = odat
     odat.pr$rwt = rexp(No,1)
-    odat.pr = odat.pr[order(odat.pr$Y),]
-    events_id.pr = which(odat.pr$delta == 1)
+    # odat.pr = odat.pr[order(odat.pr$Y),]
+    # events_id.pr = which(odat.pr$delta == 1)
     
     beta.hat.pr[k,] = nlm(f = neglog_pl_beta, par1, odat = odat.pr, ind.rho_est, gammas.hat = gammas.hat.pr, 
-                          events_id = events_id.pr, ind.wt = 1)$estimate
+                          events_id = events_id, ind.wt = 1)$estimate
   }
   
   beta.se = apply(beta.hat.pr,2,sd)
