@@ -58,14 +58,14 @@ gamma.fun = function(data, ind.wt){
   Y.R_2 = Y.R^2
   
   if (ind.wt == 0){
-    Y.R.mat = data.frame(cbind(Y.R_0,Y.R,Y.R_2, mydata[c("Delta.R", "X1.R", "X2.R")]))
+    gamma.mat = data.frame(cbind(Y.R_0,Y.R,Y.R_2, mydata[c("Delta.R", "X1.R", "X2.R")]))
     mod = glm((1-Delta.R) ~ Y.R_0 + Y.R + Y.R_2 + X1.R + X2.R,
-              data = Y.R.mat, family = "binomial")
+              data = gamma.mat, family = "binomial")
   }
   if (ind.wt == 1){
-    Y.R.mat = data.frame(cbind(Y.R_0,Y.R,Y.R_2, mydata[c("Delta.R", "X1.R", "X2.R","rwt")]))
+    gamma.mat = data.frame(cbind(Y.R_0,Y.R,Y.R_2, mydata[c("Delta.R", "X1.R", "X2.R","rwt")]))
     mod = glm((1-Delta.R) ~ Y.R_0 + Y.R + Y.R_2 + X1.R + X2.R,
-              data = Y.R.mat, family = "binomial", weights = rwt)
+              data = gamma.mat, family = "binomial", weights = rwt)
   }
   
   coeff = coef(summary(mod))[,1]

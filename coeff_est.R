@@ -56,10 +56,10 @@ gamma.fun = function(data){
   Y.R = mydata$Y.R
   Y.R_0 = log(Y.R)
   Y.R_2 = Y.R^2
-  Y.R.mat = data.frame(cbind(Y.R_0,Y.R,Y.R_2, mydata[c("Delta.R", "X1.R", "X2.R")]))
+  gamma.mat = data.frame(cbind(Y.R_0,Y.R,Y.R_2, mydata[c("Delta.R", "X1.R", "X2.R")]))
   
   mod = glm((1-Delta.R) ~ Y.R_0 + Y.R + Y.R_2 + X1.R + X2.R,
-            data = Y.R.mat, family = "binomial")
+            data = gamma.mat, family = "binomial")
   
   coeff = coef(summary(mod))[,1]
   coeff_se = coef(summary(mod))[,2]
