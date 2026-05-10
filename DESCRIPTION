@@ -1,0 +1,19 @@
+Package: dssPCR
+Type: Package
+Title: Disease-specific Survival in Observational Studies with Missing Cause of Death
+Version: 0.1.0
+Authors@R: c(
+    person(
+      "Yunyi", "Wang",
+      email = "yunyi.wang@uth.tmc.edu",
+      role = c("aut", "cre")
+    )
+  )
+Description: Implements estimation procedures for modeling disease-specific survival in observational studies 
+             with missing cause-of-death information by leveraging cause-of-death information from clinical trial data 
+             through a proportional cause ratio model.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
